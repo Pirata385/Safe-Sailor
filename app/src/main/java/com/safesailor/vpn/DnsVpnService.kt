@@ -1,5 +1,6 @@
 package com.safesailor.vpn
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -93,6 +94,9 @@ class DnsVpnService : VpnService() {
         return START_STICKY
     }
 
+    // O tipo "specialUse" está declarado no AndroidManifest principal; o lint da edição
+    // "completa" analisa o manifesto parcial da edição e acusa um falso positivo.
+    @SuppressLint("ForegroundServiceType")
     private fun startInForeground() {
         NotificationManagerCompat.from(this).cancel(ALERT_NOTIFICATION_ID)
         val open = PendingIntent.getActivity(

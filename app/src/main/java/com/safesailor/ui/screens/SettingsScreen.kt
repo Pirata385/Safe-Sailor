@@ -68,7 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.safesailor.guard.UninstallGuardService
+import com.safesailor.guard.UninstallGuard
 import com.safesailor.BuildConfig
 import com.safesailor.data.ActivityLog
 import com.safesailor.data.AdultBlocklist
@@ -101,9 +101,10 @@ fun SettingsScreen() {
     var showHelp by remember { mutableStateOf(false) }
     var updating by remember { mutableStateOf(false) }
     var showGuard by remember { mutableStateOf(false) }
-    var guardEnabled by remember { mutableStateOf(UninstallGuardService.isEnabled(context)) }
+    var showEdition by remember { mutableStateOf(false) }
+    var guardEnabled by remember { mutableStateOf(UninstallGuard.isEnabled(context)) }
     LifecycleResumeEffect(Unit) {
-        guardEnabled = UninstallGuardService.isEnabled(context)
+        guardEnabled = UninstallGuard.isEnabled(context)
         onPauseOrDispose {}
     }
 
@@ -223,24 +224,33 @@ fun SettingsScreen() {
                             c.guardStrict("Digite o PIN para removê-lo.") { Repo.clearPin(); c.showMessage("PIN removido") }
                         })
                     }
-                    SettingRow(
-                        Icons.Rounded.AdminPanelSettings,
-                        "Proteção contra desinstalação",
-                        when {
-                            !s.hasPin -> "Defina um PIN para usar"
-                            guardEnabled -> "Ativa: desinstalar ou parar o app nas configurações exige o PIN"
-                            else -> "Desativada · toque para configurar"
-                        },
-                        enabled = s.hasPin,
-                        onClick = { showGuard = true },
-                    ) {
-                        if (s.hasPin) {
-                            Text(
-                                if (guardEnabled) "Ativa" else "Ativar",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (guardEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
-                            )
+                    if (UninstallGuard.available) {
+                        SettingRow(
+                            Icons.Rounded.AdminPanelSettings,
+                            "Proteção contra desinstalação",
+                            when {
+                                !s.hasPin -> "Defina um PIN para usar"
+                                guardEnabled -> "Ativa: desinstalar ou parar o app nas configurações exige o PIN"
+                                else -> "Desativada · toque para configurar"
+                            },
+                            enabled = s.hasPin,
+                            onClick = { showGuard = true },
+                        ) {
+                            if (s.hasPin) {
+                                Text(
+                                    if (guardEnabled) "Ativa" else "Ativar",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = if (guardEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                                )
+                            }
                         }
+                    } else {
+                        SettingRow(
+                            Icons.Rounded.AdminPanelSettings,
+                            "Proteção contra desinstalação",
+                            "Disponível na edição completa do app",
+                            onClick = { showEdition = true },
+                        ) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                     SwitchRow(
                         Icons.Rounded.PowerSettingsNew,
@@ -291,7 +301,7 @@ fun SettingsScreen() {
                 Column(Modifier.padding(vertical = 8.dp)) {
                     SettingRow(Icons.Rounded.VpnLock, "Como funciona", "Entenda o filtro e suas limitações", onClick = { showHelp = true })
                     SettingRow(Icons.Rounded.Info, "Safe Sailor", "Versão ${BuildConfig.VERSION_NAME}", onClick = { showAbout = true })
-                    SettingRow(Icons.Rounded.DeleteForever, "Desinstalar o Safe Sailor", "Exige o PIN, se houver um", onClick = {
+                    if (UninstallGuard.available) SettingRow(Icons.Rounded.DeleteForever, "Desinstalar o Safe Sailor", "Exige o PIN, se houver um", onClick = {
                         c.guardStrict("Digite o PIN para desinstalar o Safe Sailor.") {
                             Repo.unlock()
                             Repo.allowLeavingUnlocked()
@@ -343,6 +353,21 @@ fun SettingsScreen() {
             },
         )
     }
+    if (showEdition) {
+        EditionDialog(
+            onDismiss = { showEdition = false },
+            onOpenInstructions = {
+                showEdition = false
+                try {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(EDITIONS_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                } catch (_: Exception) {
+                    c.showMessage("Nenhum navegador encontrado")
+                }
+            },
+        )
+    }
     if (showHelp) {
         InfoDialog("Como funciona", onDismiss = { showHelp = false }) {
             listOf(
@@ -361,6 +386,32 @@ fun SettingsScreen() {
             )
         }
     }
+}
+
+private const val EDITIONS_URL = "https://github.com/Pirata385/Safe-Sailor#edi%C3%A7%C3%B5es"
+
+@Composable
+private fun EditionDialog(onDismiss: () -> Unit, onOpenInstructions: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Rounded.AdminPanelSettings, null) },
+        title = { Text("Proteção contra desinstalação") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "Este recurso usa um serviço de acessibilidade. O Google Play Protect bloqueia a instalação de " +
+                        "apps baixados da internet que têm esse tipo de serviço, por isso ele não vem nesta edição.",
+                )
+                Text(
+                    "Para usá-lo, instale por cima a edição completa (SafeSailor-…-completa.apk). Desative o Play Protect " +
+                        "só durante a instalação. Suas listas e configurações são mantidas.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = { Button(onClick = onOpenInstructions) { Text("Ver instruções") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Fechar") } },
+    )
 }
 
 @Composable

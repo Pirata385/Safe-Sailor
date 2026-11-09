@@ -12,7 +12,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.safesailor.R
-import com.safesailor.guard.UninstallGuardService
+import com.safesailor.guard.UninstallGuard
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -111,9 +111,9 @@ fun HomeScreen() {
     val interrupted = remember(running, settings.protectionEnabled) {
         settings.protectionEnabled && !running && VpnService.prepare(context) != null
     }
-    var guardEnabled by remember { mutableStateOf(UninstallGuardService.isEnabled(context)) }
+    var guardEnabled by remember { mutableStateOf(UninstallGuard.isEnabled(context)) }
     LifecycleResumeEffect(Unit) {
-        guardEnabled = UninstallGuardService.isEnabled(context)
+        guardEnabled = UninstallGuard.isEnabled(context)
         onPauseOrDispose {}
     }
 
@@ -170,7 +170,7 @@ fun HomeScreen() {
                         if (settings.safeSearch) "Google, Bing e DuckDuckGo" else "Desligada",
                         settings.safeSearch,
                     ) { c.navigate(TAB_SETTINGS) }
-                    StatusLine(
+                    if (UninstallGuard.available) StatusLine(
                         Icons.Rounded.AdminPanelSettings,
                         "Proteção contra desinstalação",
                         when {

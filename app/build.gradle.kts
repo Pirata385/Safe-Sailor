@@ -27,8 +27,26 @@ android {
         applicationId = "com.safesailor"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.1.1"
+        versionCode = 5
+        versionName = "1.1.2"
+    }
+
+    // Duas edições do mesmo app (mesmo pacote e assinatura):
+    // - padrao: instala normalmente a partir da internet.
+    // - completa: inclui a proteção contra desinstalação (serviço de acessibilidade), que o
+    //   Google Play Protect bloqueia ao instalar APKs baixados; requer desativá-lo na instalação.
+    flavorDimensions += "edicao"
+    productFlavors {
+        create("padrao") {
+            dimension = "edicao"
+            isDefault = true
+            buildConfigField("boolean", "UNINSTALL_GUARD", "false")
+        }
+        create("completa") {
+            dimension = "edicao"
+            versionNameSuffix = "-completa"
+            buildConfigField("boolean", "UNINSTALL_GUARD", "true")
+        }
     }
 
     signingConfigs {

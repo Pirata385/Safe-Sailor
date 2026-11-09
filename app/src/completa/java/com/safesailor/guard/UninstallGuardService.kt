@@ -1,13 +1,10 @@
 package com.safesailor.guard
 
 import android.accessibilityservice.AccessibilityService
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.safesailor.data.Repo
@@ -69,15 +66,4 @@ class UninstallGuardService : AccessibilityService() {
     }
 
     override fun onInterrupt() {}
-
-    companion object {
-        /** Se o serviço está ligado nas configurações de acessibilidade. */
-        fun isEnabled(context: Context): Boolean {
-            val enabled = Settings.Secure.getString(
-                context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-            ) ?: return false
-            val me = ComponentName(context, UninstallGuardService::class.java)
-            return enabled.split(':').any { ComponentName.unflattenFromString(it) == me }
-        }
-    }
 }

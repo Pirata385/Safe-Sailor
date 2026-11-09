@@ -3,7 +3,9 @@
 Bloqueador de sites para Android: simples, privado e bonito. Bloqueia os sites que
 você escolher e, por padrão, conteúdo pornográfico.
 
-**[⬇️ Baixar APK (v1.1.1)](apk/SafeSailor-1.1.1.apk)** · Android 8.0 ou superior
+**[⬇️ Baixar APK (v1.1.2)](apk/SafeSailor-1.1.2.apk)** · Android 8.0 ou superior (32 e 64 bits)
+
+Também existe a [edição completa](#edições), com proteção contra desinstalação.
 
 > Vindo da v1.0.0? Desinstale-a antes: a partir da v1.0.1 o app usa outra chave de assinatura. Da v1.0.1 em diante, basta instalar por cima.
 
@@ -26,7 +28,7 @@ você escolher e, por padrão, conteúdo pornográfico.
 **Qualidade de vida**
 - Modo escuro (sistema, claro ou escuro) e cores Material You opcionais.
 - PIN: desligar a proteção, trocar ou remover o PIN e desinstalar sempre pedem o PIN. Outras ações que afrouxam a proteção aceitam o PIN digitado nos últimos 2 minutos, com o app aberto. Depois de 5 erros seguidos, novas tentativas ficam bloqueadas por 30 segundos.
-- Proteção contra desinstalação (veja abaixo).
+- Proteção contra desinstalação, na [edição completa](#edições).
 - Aviso e botão "Religar" se a VPN for desconectada fora do app.
 - Atalho nas configurações rápidas (bloco "Safe Sailor").
 - Religa sozinho ao ligar o celular e depois de atualizar o app.
@@ -48,7 +50,36 @@ manualmente, podem passar por cima do filtro. Só pode haver uma VPN ativa por v
 Android. Para máxima proteção, defina um PIN e ative "VPN sempre ativa" e "Bloquear
 conexões sem VPN" em *Configurações → Rede → VPN → Safe Sailor*.
 
+## Edições
+
+| | Padrão | Completa |
+|---|---|---|
+| Arquivo | [`SafeSailor-1.1.2.apk`](apk/SafeSailor-1.1.2.apk) | [`SafeSailor-1.1.2-completa.apk`](apk/SafeSailor-1.1.2-completa.apk) |
+| Todos os filtros, PIN e demais recursos | ✅ | ✅ |
+| Proteção contra desinstalação | — | ✅ |
+| Instala direto pelo navegador | ✅ | Exige desativar o Play Protect na instalação |
+
+As duas edições são o mesmo app, com o mesmo pacote e a mesma assinatura. Você pode
+instalar uma por cima da outra sem perder listas e configurações.
+
+**Por que a edição completa é separada?** A proteção contra desinstalação usa um serviço de
+acessibilidade. No Brasil e em outros países, o Google Play Protect **bloqueia
+automaticamente** a instalação de apps baixados da internet que declaram esse tipo de
+serviço. A mensagem é "App bloqueado para proteger seu dispositivo".
+
+**Como instalar a edição completa:**
+1. Abra a Play Store, toque na sua foto e vá em **Play Protect**.
+2. Toque na engrenagem ⚙ e desative **Verificar apps com o Play Protect**.
+3. Instale o `SafeSailor-…-completa.apk`.
+4. Volte e reative a verificação do Play Protect.
+
+Em celulares Samsung com Android 14 ou superior, confira também se o **Bloqueador
+automático** está desligado, em *Configurações → Segurança e privacidade*. Ele
+impede qualquer instalação de APK fora das lojas oficiais.
+
 ## Proteção contra desinstalação
+
+*Somente na edição completa.*
 
 O Android não permite que um app comum bloqueie a própria desinstalação. Como
 alternativa, o Safe Sailor oferece um **serviço de acessibilidade** opcional (o mesmo
@@ -72,8 +103,8 @@ reiniciar o celular em modo de segurança ainda consegue remover o app.
 Requisitos: JDK 17+ e Android SDK (plataforma 35).
 
 ```bash
-./gradlew testDebugUnitTest   # testes
-./gradlew assembleRelease     # APK em app/build/outputs/apk/release/
+./gradlew testPadraoDebugUnitTest   # testes
+./gradlew assembleRelease           # as duas edições em app/build/outputs/apk/{padrao,completa}/release/
 ```
 
 ### Assinatura
@@ -115,7 +146,9 @@ scripts/update_adult_list.sh
 ```
 app/src/main/java/com/safesailor/
 ├── vpn/     VpnService, análise de pacotes IP/UDP/DNS, regras de filtro, bloco rápido, boot
-├── guard/   serviço de acessibilidade da proteção contra desinstalação
+├── guard/   regras da proteção contra desinstalação
+
+app/src/completa/   arquivos só da edição completa (serviço de acessibilidade)
 ├── data/    configurações, listas, estatísticas, registro, lista adulta
 ├── ui/      Jetpack Compose: telas Início, Sites, Atividade e Ajustes
 └── util/    normalização de domínios
