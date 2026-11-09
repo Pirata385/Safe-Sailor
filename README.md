@@ -3,9 +3,9 @@
 Bloqueador de sites para Android: simples, privado e bonito. Bloqueia os sites que
 você escolher e, por padrão, conteúdo pornográfico.
 
-**[⬇️ Baixar APK (v1.0.1)](apk/SafeSailor-1.0.1.apk)** · Android 8.0 ou superior
+**[⬇️ Baixar APK (v1.1.0)](apk/SafeSailor-1.1.0.apk)** · Android 8.0 ou superior
 
-> Instalou a v1.0.0? Desinstale-a antes: a v1.0.1 usa uma nova chave de assinatura.
+> Vindo da v1.0.0? Desinstale-a antes: a partir da v1.0.1 o app usa outra chave de assinatura. Da v1.0.1 em diante, basta instalar por cima.
 
 | Início | Modo escuro | Sites | Atividade | Ajustes |
 |---|---|---|---|---|
@@ -25,7 +25,9 @@ você escolher e, por padrão, conteúdo pornográfico.
 
 **Qualidade de vida**
 - Modo escuro (sistema, claro ou escuro) e cores Material You opcionais.
-- PIN para proteger o desligamento e qualquer ação que afrouxe a proteção (fica desbloqueado por 5 minutos depois de digitado).
+- PIN: desligar a proteção, trocar ou remover o PIN e desinstalar sempre pedem o PIN. Outras ações que afrouxam a proteção aceitam o PIN digitado nos últimos 2 minutos, com o app aberto. Depois de 5 erros seguidos, novas tentativas ficam bloqueadas por 30 segundos.
+- Proteção contra desinstalação (veja abaixo).
+- Aviso e botão "Religar" se a VPN for desconectada fora do app.
 - Atalho nas configurações rápidas (bloco "Safe Sailor").
 - Religa sozinho ao ligar o celular e depois de atualizar o app.
 - Compatível com "VPN sempre ativa" do Android.
@@ -45,6 +47,25 @@ atividade fica apenas na memória do aparelho.
 manualmente, podem passar por cima do filtro. Só pode haver uma VPN ativa por vez no
 Android. Para máxima proteção, defina um PIN e ative "VPN sempre ativa" e "Bloquear
 conexões sem VPN" em *Configurações → Rede → VPN → Safe Sailor*.
+
+## Proteção contra desinstalação
+
+O Android não permite que um app comum bloqueie a própria desinstalação. Como
+alternativa, o Safe Sailor oferece um **serviço de acessibilidade** opcional (o mesmo
+recurso usado por apps de controle parental). Com ele ativo e um PIN definido, as telas do
+sistema que desinstalam, forçam a parada, limpam os dados, desconectam a VPN ou desligam o
+próprio serviço são fechadas, e o app pede o PIN. Com o PIN correto, você tem 2 minutos
+para fazer a alteração.
+
+O serviço só olha as telas dos apps de sistema (Configurações, instalador de pacotes e
+diálogos de VPN) e só age quando a tela menciona o Safe Sailor. Nada é guardado nem enviado.
+
+Para ativar, vá em *Ajustes → Proteção contra desinstalação*. No Android 13 ou superior,
+apps instalados por APK precisam antes de "Permitir configurações restritas", no menu ⋮
+de *Informações do app*.
+
+**Limites:** quem tiver acesso a um computador com depuração USB (ADB) ou souber
+reiniciar o celular em modo de segurança ainda consegue remover o app.
 
 ## Compilar
 
@@ -94,6 +115,7 @@ scripts/update_adult_list.sh
 ```
 app/src/main/java/com/safesailor/
 ├── vpn/     VpnService, análise de pacotes IP/UDP/DNS, regras de filtro, bloco rápido, boot
+├── guard/   serviço de acessibilidade da proteção contra desinstalação
 ├── data/    configurações, listas, estatísticas, registro, lista adulta
 ├── ui/      Jetpack Compose: telas Início, Sites, Atividade e Ajustes
 └── util/    normalização de domínios

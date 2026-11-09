@@ -17,7 +17,10 @@ import java.util.Locale
 
 /** Estado persistente do app: configurações, listas de sites e estatísticas. */
 object Repo {
-    private const val UNLOCK_WINDOW_MS = 5 * 60 * 1000L
+    /** Depois de digitar o PIN, ações comuns ficam liberadas por este tempo. */
+    const val UNLOCK_WINDOW_MS = 2 * 60 * 1000L
+    private const val MAX_PIN_ATTEMPTS = 5
+    private const val PIN_COOLDOWN_MS = 30_000L
 
     private lateinit var prefs: SharedPreferences
     @Volatile private var initialized = false
@@ -37,6 +40,9 @@ object Repo {
     @Volatile private var blockedSet: Set<String> = emptySet()
     @Volatile private var allowedSet: Set<String> = emptySet()
     @Volatile private var unlockedUntil = 0L
+    @Volatile private var keepUnlockedOnLeave = false
+    private var failedPinAttempts = 0
+    @Volatile private var pinBlockedUntil = 0L
     private var lastStatsSave = 0L
 
     fun init(context: Context) {
@@ -123,20 +129,54 @@ object Repo {
         val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
         val saltStr = Base64.encodeToString(salt, Base64.NO_WRAP)
         update { it.copy(pinHash = hash(saltStr, pin), pinSalt = saltStr) }
-        unlock()
+        // Não libera nada: o PIN passa a valer imediatamente.
+        lock()
     }
 
-    fun clearPin() = update { it.copy(pinHash = null, pinSalt = null) }
+    fun clearPin() {
+        update { it.copy(pinHash = null, pinSalt = null) }
+        lock()
+    }
 
-    fun checkPin(pin: String): Boolean {
+    /** Verifica o PIN. Após [MAX_PIN_ATTEMPTS] erros seguidos, recusa tudo por 30 s. */
+    fun checkPin(pin: String): Boolean = synchronized(this) {
         val s = _settings.value
         val h = s.pinHash ?: return true
-        return MessageDigest.isEqual(h.toByteArray(), hash(s.pinSalt ?: "", pin).toByteArray())
+        if (pinCooldownSeconds() > 0) return false
+        val ok = MessageDigest.isEqual(h.toByteArray(), hash(s.pinSalt ?: "", pin).toByteArray())
+        if (ok) {
+            failedPinAttempts = 0
+        } else if (++failedPinAttempts >= MAX_PIN_ATTEMPTS) {
+            failedPinAttempts = 0
+            pinBlockedUntil = System.currentTimeMillis() + PIN_COOLDOWN_MS
+        }
+        ok
     }
 
+    fun pinCooldownSeconds(): Int =
+        ((pinBlockedUntil - System.currentTimeMillis()).coerceAtLeast(0) / 1000).toInt().let { if (it > 0) it + 1 else 0 }
+
+    /** Liberado para ações comuns (sem PIN definido, ou PIN digitado há pouco). */
     fun isUnlocked() = !_settings.value.hasPin || System.currentTimeMillis() < unlockedUntil
-    fun unlock() { unlockedUntil = System.currentTimeMillis() + UNLOCK_WINDOW_MS }
-    fun lock() { unlockedUntil = 0L }
+
+    fun unlock() {
+        unlockedUntil = System.currentTimeMillis() + UNLOCK_WINDOW_MS
+    }
+
+    fun lock() {
+        unlockedUntil = 0L
+        keepUnlockedOnLeave = false
+    }
+
+    /** Mantém a liberação ao sair do app para abrir uma tela do sistema pedida pelo usuário. */
+    fun allowLeavingUnlocked() {
+        keepUnlockedOnLeave = true
+    }
+
+    /** Chamado quando o app sai da tela: encerra a liberação, salvo se foi pedido acima. */
+    fun onAppLeft() {
+        if (keepUnlockedOnLeave) keepUnlockedOnLeave = false else unlockedUntil = 0L
+    }
 
     private fun hash(salt: String, pin: String): String {
         var bytes = (salt + pin).toByteArray()

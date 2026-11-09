@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <application
         android:name=".SafeSailorApplication"
@@ -31,6 +32,27 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.PinUnlockActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.SafeSailor.Translucent" />
+
+        <service
+            android:name=".guard.UninstallGuardService"
+            android:exported="false"
+            android:label="@string/guard_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/uninstall_guard" />
+        </service>
+
         <service
             android:name=".vpn.DnsVpnService"
             android:exported="false"
@@ -47,7 +69,7 @@
         <service
             android:name=".vpn.ProtectionTileService"
             android:exported="true"
-            android:icon="@drawable/ic_stat_shield"
+            android:icon="@drawable/ic_stat_boat"
             android:label="@string/tile_label"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>

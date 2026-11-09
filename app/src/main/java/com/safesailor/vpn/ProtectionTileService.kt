@@ -20,8 +20,8 @@ class ProtectionTileService : TileService() {
     override fun onClick() {
         Repo.init(this)
         if (VpnStatus.running.value) {
-            if (!Repo.isUnlocked()) {
-                openApp() // exige o PIN no app
+            if (Repo.settings.value.hasPin) {
+                openApp() // com PIN definido, desligar sempre exige digitá-lo no app
                 return
             }
             Repo.setProtectionEnabled(false)

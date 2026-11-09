@@ -5,4 +5,11 @@
     <string name="channel_protection_desc">Mostra que a proteção está ativa</string>
     <string name="notif_title">Proteção ativa</string>
     <string name="notif_text">Sites bloqueados e conteúdo adulto estão sendo filtrados</string>
+    <string name="channel_alerts">Alertas</string>
+    <string name="channel_alerts_desc">Avisa quando a proteção é desligada fora do app</string>
+    <string name="alert_interrupted_title">Proteção interrompida</string>
+    <string name="alert_interrupted_text">A VPN do Safe Sailor foi desconectada fora do app. Toque para religar a proteção.</string>
+    <string name="guard_label">Safe Sailor</string>
+    <string name="guard_summary">Proteção contra desinstalação</string>
+    <string name="guard_description">Impede desinstalar, forçar a parada ou desligar o Safe Sailor nas configurações do Android sem o PIN. Este serviço só procura telas que mencionam o Safe Sailor; nada é lido, guardado ou enviado além disso.</string>
 </resources>
