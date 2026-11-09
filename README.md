@@ -3,7 +3,7 @@
 Bloqueador de sites para Android: simples, privado e bonito. Bloqueia os sites que
 você escolher e, por padrão, conteúdo pornográfico.
 
-**[⬇️ Baixar APK (v1.1.0)](apk/SafeSailor-1.1.0.apk)** · Android 8.0 ou superior
+**[⬇️ Baixar APK (v1.1.1)](apk/SafeSailor-1.1.1.apk)** · Android 8.0 ou superior
 
 > Vindo da v1.0.0? Desinstale-a antes: a partir da v1.0.1 o app usa outra chave de assinatura. Da v1.0.1 em diante, basta instalar por cima.
 

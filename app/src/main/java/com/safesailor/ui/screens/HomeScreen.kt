@@ -9,7 +9,6 @@ import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.safesailor.R
@@ -391,7 +390,7 @@ fun AppLogo(modifier: Modifier = Modifier) {
     Box(
         modifier
             .clip(CircleShape)
-            .background(Brush.linearGradient(listOf(Color(0xFF2F80F0), Color(0xFF1153B8)))),
+            .background(Color(0xFF1565D8)),
     ) {
         // A arte do ícone usa a área central (72 de 108); amplia para preencher o círculo.
         Image(

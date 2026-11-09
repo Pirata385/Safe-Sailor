@@ -1,12 +1,16 @@
-<!-- Veleiro subindo uma onda. -->
+<!-- Veleiro em mar calmo: branco sobre azul. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <group android:translateX="-3" android:translateY="-4" android:rotation="-14" android:pivotX="54" android:pivotY="64">
-        <path android:fillColor="#FFFFFF" android:pathData="M55,25 L55,57 L75,57 C71,44 64,33 55,25 Z" />
-        <path android:fillColor="#FFFFFF" android:pathData="M51.5,31 L51.5,57 L36,57 C40,47 45,38 51.5,31 Z" />
-        <path android:fillColor="#FFFFFF" android:pathData="M31,60.5 L78,60.5 C76,66 72,70 66,70 L40,70 C35.5,70 32.5,66 31,60.5 Z" />
+    <group android:scaleX="0.82" android:scaleY="0.82" android:pivotX="55" android:pivotY="48" android:translateY="-1">
+        <path android:fillColor="#FFFFFF" android:pathData="M56,24 C64,35 71,47 75,60 L56,60 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M52,31 L52,60 L36,60 C40,50 45,40 52,31 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M31,64 L79,64 C77,70 72,73 65,73 L45,73 C38,73 33,70 31,64 Z" />
     </group>
-    <path android:fillColor="#BFD8FF"
-        android:pathData="M0,84 C16,84 28,81 42,76 C54,71.5 61,64 66,57 C70,51.5 77,50 81,54 C84,57 83,61.5 79.5,62 C77.2,62.3 75.8,60.4 76.6,58.4 C73,61 72.5,67 75.5,72 C78.5,77 86,80.5 108,80.5 L108,108 L0,108 Z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3" android:fillColor="#00000000"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M30,74 q6,-1.8 12,0 t12,0 t12,0 t12,0" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3" android:fillColor="#00000000"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M42,80.5 q6,-1.8 12,0 t12,0" />
 </vector>
