@@ -3,7 +3,9 @@
 Bloqueador de sites para Android: simples, privado e bonito. Bloqueia os sites que
 você escolher e, por padrão, conteúdo pornográfico.
 
-**[⬇️ Baixar APK (v1.0.0)](apk/SafeSailor-1.0.0.apk)** · Android 8.0 ou superior
+**[⬇️ Baixar APK (v1.0.1)](apk/SafeSailor-1.0.1.apk)** · Android 8.0 ou superior
+
+> Instalou a v1.0.0? Desinstale-a antes: a v1.0.1 usa uma nova chave de assinatura.
 
 | Início | Modo escuro | Sites | Atividade | Ajustes |
 |---|---|---|---|---|
@@ -55,17 +57,31 @@ Requisitos: JDK 17+ e Android SDK (plataforma 35).
 
 ### Assinatura
 
-Sem configuração extra, o APK é assinado com a chave de desenvolvimento
-`keystore/safesailor-dev.jks` (senha `safesailor`). Manter a mesma chave permite
-instalar versões novas por cima da antiga. Para distribuir publicamente, gere uma
-chave própria e crie um `keystore.properties` (já está no `.gitignore`):
+A chave de assinatura **não fica no repositório**. Sem ela, o `assembleRelease` assina
+com a chave de debug (serve só para testes locais).
+
+**Local:** crie um `keystore.properties` na raiz (já está no `.gitignore`):
 
 ```properties
-storeFile=/caminho/para/minha-chave.jks
+storeFile=/caminho/para/safesailor-release.jks
 storePassword=...
-keyAlias=...
+keyAlias=safesailor
 keyPassword=...
 ```
+
+**GitHub Actions:** o workflow `.github/workflows/build.yml` roda os testes, compila
+e assina o APK a cada push. Ele também publica uma Release quando você cria uma tag
+`v*`. Configure em *Settings → Secrets and variables → Actions*:
+
+| Secret | Valor |
+|---|---|
+| `KEYSTORE_BASE64` | `base64 -w0 safesailor-release.jks` |
+| `KEYSTORE_PASSWORD` | senha da keystore |
+| `KEY_ALIAS` | `safesailor` |
+| `KEY_PASSWORD` | senha da chave |
+
+Guarde a chave em local seguro: sem ela não é possível publicar atualizações que
+instalem por cima da versão anterior.
 
 ### Atualizar a lista adulta embutida
 
