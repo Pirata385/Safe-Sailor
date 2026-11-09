@@ -1,6 +1,16 @@
+<!-- Veleiro em mar calmo: branco sobre azul. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:fillType="evenOdd"
-        android:pathData="M54,29 L75,36.5 L75,52 C75,65.5 66,75 54,79 C42,75 33,65.5 33,52 L33,36.5 Z M44.2,51.5 L40.7,55 L51,65.4 L67,48.8 L63.4,45.3 L51,58.3 Z" />
+    <group android:scaleX="0.82" android:scaleY="0.82" android:pivotX="55" android:pivotY="48" android:translateY="-1">
+        <path android:fillColor="#FFFFFF" android:pathData="M56,24 C64,35 71,47 75,60 L56,60 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M52,31 L52,60 L36,60 C40,50 45,40 52,31 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M31,64 L79,64 C77,70 72,73 65,73 L45,73 C38,73 33,70 31,64 Z" />
+    </group>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3" android:fillColor="#00000000"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M30,74 q6,-1.8 12,0 t12,0 t12,0 t12,0" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3" android:fillColor="#00000000"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M42,80.5 q6,-1.8 12,0 t12,0" />
 </vector>

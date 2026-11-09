@@ -14,6 +14,7 @@ import android.system.OsConstants
 import android.system.StructPollfd
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.safesailor.R
@@ -46,6 +47,7 @@ class DnsVpnService : VpnService() {
         const val ACTION_START = "com.safesailor.action.START"
         const val ACTION_STOP = "com.safesailor.action.STOP"
         private const val NOTIFICATION_ID = 1
+        private const val ALERT_NOTIFICATION_ID = 2
         private const val ADDR4 = "10.111.222.1"
         private const val DNS4 = "10.111.222.2"
         private const val ADDR6 = "fd00:5afe:5a11::1"
@@ -92,11 +94,12 @@ class DnsVpnService : VpnService() {
     }
 
     private fun startInForeground() {
+        NotificationManagerCompat.from(this).cancel(ALERT_NOTIFICATION_ID)
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(this, SafeSailorApplication.CHANNEL_PROTECTION)
-            .setSmallIcon(R.drawable.ic_stat_shield)
+            .setSmallIcon(R.drawable.ic_stat_boat)
             .setContentTitle(getString(R.string.notif_title))
             .setContentText(getString(R.string.notif_text))
             .setColor(ContextCompat.getColor(this, R.color.brand_blue))
@@ -283,10 +286,38 @@ class DnsVpnService : VpnService() {
     }
 
     override fun onRevoke() {
-        // Outro app de VPN assumiu ou o usuário desconectou nas configurações do sistema.
-        Repo.setProtectionEnabled(false)
+        // Outro app de VPN assumiu ou alguém desconectou nas configurações do sistema.
+        val s = Repo.settings.value
+        if (s.hasPin && s.protectionEnabled) {
+            // Com PIN, isso não conta como desligar: mantém a proteção pedida e avisa.
+            notifyInterrupted()
+        } else {
+            Repo.setProtectionEnabled(false)
+        }
         shutdown()
         super.onRevoke()
+    }
+
+    private fun notifyInterrupted() {
+        val open = PendingIntent.getActivity(
+            this, 3, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(this, SafeSailorApplication.CHANNEL_ALERTS)
+            .setSmallIcon(R.drawable.ic_stat_boat)
+            .setContentTitle(getString(R.string.alert_interrupted_title))
+            .setContentText(getString(R.string.alert_interrupted_text))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(getString(R.string.alert_interrupted_text)))
+            .setColor(ContextCompat.getColor(this, R.color.brand_blue))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        try {
+            NotificationManagerCompat.from(this).notify(ALERT_NOTIFICATION_ID, notification)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Sem permissão de notificação", e)
+        }
     }
 
     override fun onDestroy() {

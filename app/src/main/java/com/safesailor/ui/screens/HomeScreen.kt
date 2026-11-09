@@ -2,6 +2,17 @@ package com.safesailor.ui.screens
 
 import android.content.Intent
 import android.provider.Settings
+import android.net.VpnService
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.safesailor.R
+import com.safesailor.guard.UninstallGuardService
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -95,20 +106,37 @@ fun HomeScreen() {
     val stats by Repo.stats.collectAsStateWithLifecycle()
     val blocked by Repo.blocked.collectAsStateWithLifecycle()
     val adultCount by AdultBlocklist.count.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    // A proteção deveria estar ligada, mas caiu e precisa da permissão de VPN de novo.
+    val interrupted = remember(running, settings.protectionEnabled) {
+        settings.protectionEnabled && !running && VpnService.prepare(context) != null
+    }
+    var guardEnabled by remember { mutableStateOf(UninstallGuardService.isEnabled(context)) }
+    LifecycleResumeEffect(Unit) {
+        guardEnabled = UninstallGuardService.isEnabled(context)
+        onPauseOrDispose {}
+    }
 
     LazyColumn(
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Column {
-                Text("Safe Sailor", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
-                Text(
-                    "Navegue com tranquilidade",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AppLogo(Modifier.size(52.dp))
+                Spacer(Modifier.width(14.dp))
+                Column {
+                    Text("Safe Sailor", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Navegue com tranquilidade",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
+        }
+        if (interrupted) {
+            item { InterruptedCard { c.setProtection(true) } }
         }
         if (!settings.onboardingDone) {
             item { WelcomeCard { Repo.update { it.copy(onboardingDone = true) } } }
@@ -141,6 +169,16 @@ fun HomeScreen() {
                         "Busca segura",
                         if (settings.safeSearch) "Google, Bing e DuckDuckGo" else "Desligada",
                         settings.safeSearch,
+                    ) { c.navigate(TAB_SETTINGS) }
+                    StatusLine(
+                        Icons.Rounded.AdminPanelSettings,
+                        "Proteção contra desinstalação",
+                        when {
+                            !settings.hasPin -> "Defina um PIN em Ajustes"
+                            guardEnabled -> "Ativa"
+                            else -> "Desativada"
+                        },
+                        settings.hasPin && guardEnabled,
                     ) { c.navigate(TAB_SETTINGS) }
                     StatusLine(Icons.Rounded.Dns, "Servidor DNS", settings.dnsProvider.label, true) { c.navigate(TAB_SETTINGS) }
                 }
@@ -348,8 +386,48 @@ private fun StatusLine(icon: ImageVector, title: String, value: String, ok: Bool
 }
 
 @Composable
+fun AppLogo(modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .clip(CircleShape)
+            .background(Color(0xFF1565D8)),
+    ) {
+        // A arte do ícone usa a área central (72 de 108); amplia para preencher o círculo.
+        Image(
+            painterResource(R.drawable.ic_launcher_foreground),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize().scale(1.5f),
+        )
+    }
+}
+
+@Composable
+private fun InterruptedCard(onRestart: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Card(
+        colors = CardDefaults.cardColors(containerColor = scheme.errorContainer),
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.Warning, null, tint = scheme.onErrorContainer)
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Proteção interrompida", style = MaterialTheme.typography.titleMedium, color = scheme.onErrorContainer)
+                Text(
+                    "A VPN foi desconectada fora do app.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onErrorContainer,
+                )
+            }
+            Button(onClick = onRestart) { Text("Religar") }
+        }
+    }
+}
+
+@Composable
 private fun AlwaysOnTip(onDismiss: () -> Unit) {
-    val context = LocalContext.current
+    val c = LocalAppController.current
     SoftCard {
         Column(Modifier.padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 8.dp)) {
             Row(verticalAlignment = Alignment.Top) {
@@ -368,12 +446,7 @@ private fun AlwaysOnTip(onDismiss: () -> Unit) {
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onDismiss) { Text("Agora não") }
-                TextButton(onClick = {
-                    try {
-                        context.startActivity(Intent(Settings.ACTION_VPN_SETTINGS))
-                    } catch (_: Exception) {
-                    }
-                }) { Text("Abrir configurações") }
+                TextButton(onClick = { c.openSystemScreen(Intent(Settings.ACTION_VPN_SETTINGS)) }) { Text("Abrir configurações") }
             }
         }
     }

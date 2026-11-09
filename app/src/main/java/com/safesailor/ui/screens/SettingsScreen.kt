@@ -3,6 +3,7 @@
 package com.safesailor.ui.screens
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.clickable
@@ -22,6 +23,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Abc
+import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DeleteSweep
@@ -63,7 +66,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.safesailor.guard.UninstallGuardService
 import com.safesailor.BuildConfig
 import com.safesailor.data.ActivityLog
 import com.safesailor.data.AdultBlocklist
@@ -95,6 +100,12 @@ fun SettingsScreen() {
     var showAbout by remember { mutableStateOf(false) }
     var showHelp by remember { mutableStateOf(false) }
     var updating by remember { mutableStateOf(false) }
+    var showGuard by remember { mutableStateOf(false) }
+    var guardEnabled by remember { mutableStateOf(UninstallGuardService.isEnabled(context)) }
+    LifecycleResumeEffect(Unit) {
+        guardEnabled = UninstallGuardService.isEnabled(context)
+        onPauseOrDispose {}
+    }
 
     /** Ligar um filtro é livre; desligar (afrouxar) pede o PIN. */
     fun toggle(newValue: Boolean, apply: () -> Unit) = if (newValue) apply() else c.guard(apply)
@@ -205,12 +216,31 @@ fun SettingsScreen() {
                         if (s.hasPin) "Alterar PIN" else "Proteger com PIN",
                         if (s.hasPin) "PIN ativo: necessário para desligar ou afrouxar a proteção"
                         else "Impede que outras pessoas desliguem a proteção",
-                        onClick = { if (s.hasPin) c.guard { showPinSetup = true } else showPinSetup = true },
+                        onClick = { c.guardStrict("Digite o PIN atual para alterá-lo.") { showPinSetup = true } },
                     )
                     if (s.hasPin) {
                         SettingRow(Icons.Rounded.LockOpen, "Remover PIN", onClick = {
-                            c.guard { Repo.clearPin(); c.showMessage("PIN removido") }
+                            c.guardStrict("Digite o PIN para removê-lo.") { Repo.clearPin(); c.showMessage("PIN removido") }
                         })
+                    }
+                    SettingRow(
+                        Icons.Rounded.AdminPanelSettings,
+                        "Proteção contra desinstalação",
+                        when {
+                            !s.hasPin -> "Defina um PIN para usar"
+                            guardEnabled -> "Ativa: desinstalar ou parar o app nas configurações exige o PIN"
+                            else -> "Desativada · toque para configurar"
+                        },
+                        enabled = s.hasPin,
+                        onClick = { showGuard = true },
+                    ) {
+                        if (s.hasPin) {
+                            Text(
+                                if (guardEnabled) "Ativa" else "Ativar",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (guardEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                     SwitchRow(
                         Icons.Rounded.PowerSettingsNew,
@@ -222,13 +252,7 @@ fun SettingsScreen() {
                         Icons.Rounded.VpnLock,
                         "VPN sempre ativa",
                         "Abra as configurações do Android para impedir que a proteção seja desligada",
-                        onClick = {
-                            try {
-                                context.startActivity(Intent(Settings.ACTION_VPN_SETTINGS))
-                            } catch (_: Exception) {
-                                c.showMessage("Configuração indisponível neste aparelho")
-                            }
-                        },
+                        onClick = { c.openSystemScreen(Intent(Settings.ACTION_VPN_SETTINGS)) },
                     ) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
@@ -267,6 +291,20 @@ fun SettingsScreen() {
                 Column(Modifier.padding(vertical = 8.dp)) {
                     SettingRow(Icons.Rounded.VpnLock, "Como funciona", "Entenda o filtro e suas limitações", onClick = { showHelp = true })
                     SettingRow(Icons.Rounded.Info, "Safe Sailor", "Versão ${BuildConfig.VERSION_NAME}", onClick = { showAbout = true })
+                    SettingRow(Icons.Rounded.DeleteForever, "Desinstalar o Safe Sailor", "Exige o PIN, se houver um", onClick = {
+                        c.guardStrict("Digite o PIN para desinstalar o Safe Sailor.") {
+                            Repo.unlock()
+                            Repo.allowLeavingUnlocked()
+                            try {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_DELETE, Uri.parse("package:${context.packageName}"))
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                )
+                            } catch (_: Exception) {
+                                c.showMessage("Não foi possível abrir a desinstalação")
+                            }
+                        }
+                    })
                 }
             }
         }
@@ -289,12 +327,28 @@ fun SettingsScreen() {
             c.showMessage("PIN definido")
         })
     }
+    if (showGuard) {
+        GuardDialog(
+            enabled = guardEnabled,
+            onDismiss = { showGuard = false },
+            onOpenAccessibility = {
+                showGuard = false
+                c.openSystemScreen(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            },
+            onOpenAppInfo = {
+                showGuard = false
+                c.openSystemScreen(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
+                )
+            },
+        )
+    }
     if (showHelp) {
         InfoDialog("Como funciona", onDismiss = { showHelp = false }) {
             listOf(
                 "O Safe Sailor cria uma VPN local no seu aparelho. Ela não envia seu tráfego para nenhum servidor: apenas verifica o endereço de cada site antes da conexão.",
                 "Se o site estiver na sua lista de bloqueio ou na lista de conteúdo adulto, ele simplesmente não abre. Os demais endereços são consultados no servidor DNS escolhido.",
-                "Para máxima proteção, ative \"VPN sempre ativa\" e \"Bloquear conexões sem VPN\" nas configurações do Android e defina um PIN.",
+                "Para máxima proteção: defina um PIN, ative a proteção contra desinstalação e ligue \"VPN sempre ativa\" e \"Bloquear conexões sem VPN\" nas configurações do Android.",
                 "Limitações: apps com VPN própria ou navegadores com \"DNS seguro\" configurado manualmente podem ignorar o filtro. A opção \"Impedir desvios\" reduz isso. Outra VPN ativa desliga o Safe Sailor.",
             )
         }
@@ -307,6 +361,58 @@ fun SettingsScreen() {
             )
         }
     }
+}
+
+@Composable
+private fun GuardDialog(enabled: Boolean, onDismiss: () -> Unit, onOpenAccessibility: () -> Unit, onOpenAppInfo: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Rounded.AdminPanelSettings, null) },
+        title = { Text("Proteção contra desinstalação") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (enabled) {
+                    Text(
+                        "Ativa. Ao tentar desinstalar, forçar a parada, desconectar a VPN ou desligar este serviço " +
+                            "nas configurações do Android, o Safe Sailor fecha a tela e pede o PIN. " +
+                            "Com o PIN correto, você tem 2 minutos para fazer a alteração.",
+                    )
+                    Text(
+                        "Para desativá-la, toque em \"Abrir acessibilidade\" (pede o PIN) e desligue o Safe Sailor.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text(
+                        "O Android não permite que um app bloqueie a própria desinstalação. Como alternativa, o Safe Sailor " +
+                            "usa um serviço de acessibilidade: ele percebe as telas do sistema que desinstalam ou desligam o app " +
+                            "e exige o PIN antes de continuar.",
+                    )
+                    Text("Como ativar:", style = MaterialTheme.typography.titleSmall)
+                    Text("1. Toque em \"Abrir acessibilidade\".")
+                    Text("2. Procure \"Safe Sailor\" (às vezes em \"Apps instalados\" ou \"Serviços baixados\") e ative.")
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        Text(
+                            "Se aparecer \"Configuração restrita\": toque em \"Informações do app\", abra o menu ⋮ no canto e " +
+                                "escolha \"Permitir configurações restritas\". Depois volte ao passo 1.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        "O serviço só procura telas que mencionam o Safe Sailor. Nada é guardado nem enviado.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = { Button(onClick = onOpenAccessibility) { Text("Abrir acessibilidade") } },
+        dismissButton = {
+            Row {
+                if (!enabled && Build.VERSION.SDK_INT >= 33) TextButton(onClick = onOpenAppInfo) { Text("Informações do app") }
+                TextButton(onClick = onDismiss) { Text("Fechar") }
+            }
+        },
+    )
 }
 
 @Composable

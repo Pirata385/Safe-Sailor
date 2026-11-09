@@ -3,6 +3,7 @@ package com.safesailor.ui
 import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.VpnService
@@ -56,11 +57,17 @@ import kotlinx.coroutines.launch
 /** Ações globais disponíveis para todas as telas. */
 class AppController(
     val showMessage: (String) -> Unit,
-    /** Executa a ação somente após confirmar o PIN (se houver um definido). */
+    /** Executa a ação após confirmar o PIN; aceita o PIN digitado nos últimos 2 minutos. */
     val guard: (() -> Unit) -> Unit,
+    /** Executa a ação somente após digitar o PIN agora (desligar proteção, mudar PIN...). */
+    val guardStrict: (String, () -> Unit) -> Unit,
+    /** Abre uma tela do sistema (VPN, acessibilidade, app) liberando-a por 2 minutos. */
+    val openSystemScreen: (Intent) -> Unit,
     val setProtection: (Boolean) -> Unit,
     val navigate: (Int) -> Unit,
 )
+
+private class PendingGuard(val message: String, val action: () -> Unit)
 
 val LocalAppController = staticCompositionLocalOf<AppController> { error("AppController ausente") }
 
@@ -84,7 +91,7 @@ fun SafeSailorApp() {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     var tab by rememberSaveable { mutableIntStateOf(TAB_HOME) }
-    var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var pending by remember { mutableStateOf<PendingGuard?>(null) }
 
     fun message(text: String) {
         scope.launch {
@@ -126,9 +133,26 @@ fun SafeSailorApp() {
     }
 
     val controller = remember {
+        val guard: (() -> Unit) -> Unit = { action ->
+            if (Repo.isUnlocked()) action() else pending = PendingGuard("Esta ação está protegida por PIN.", action)
+        }
+        val guardStrict: (String, () -> Unit) -> Unit = { message, action ->
+            if (!Repo.settings.value.hasPin) action() else pending = PendingGuard(message, action)
+        }
         AppController(
             showMessage = ::message,
-            guard = { action -> if (Repo.isUnlocked()) action() else pendingAction = action },
+            guard = guard,
+            guardStrict = guardStrict,
+            openSystemScreen = { intent ->
+                guard {
+                    Repo.allowLeavingUnlocked()
+                    try {
+                        context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (e: ActivityNotFoundException) {
+                        message("Configuração indisponível neste aparelho")
+                    }
+                }
+            },
             setProtection = { enable ->
                 if (enable) {
                     val needsNotif = Build.VERSION.SDK_INT >= 33 &&
@@ -136,11 +160,10 @@ fun SafeSailorApp() {
                         PackageManager.PERMISSION_GRANTED
                     if (needsNotif) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) else requestVpn()
                 } else {
-                    val stop = {
+                    guardStrict("Digite o PIN para desativar a proteção.") {
                         Repo.setProtectionEnabled(false)
                         DnsVpnService.stop(context)
                     }
-                    if (Repo.isUnlocked()) stop() else pendingAction = stop
                 }
             },
             navigate = { tab = it },
@@ -176,14 +199,15 @@ fun SafeSailorApp() {
             }
         }
 
-        pendingAction?.let { action ->
+        pending?.let { p ->
             PinPromptDialog(
-                onDismiss = { pendingAction = null },
+                message = p.message,
+                onDismiss = { pending = null },
                 onSubmit = { pin ->
                     if (Repo.checkPin(pin)) {
                         Repo.unlock()
-                        pendingAction = null
-                        action()
+                        pending = null
+                        p.action()
                         true
                     } else {
                         false

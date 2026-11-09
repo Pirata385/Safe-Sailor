@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.safesailor.data.Repo
 
 private fun String.digitsOnly(max: Int = 8) = filter { it.isDigit() }.take(max)
 
@@ -39,12 +40,12 @@ fun PinPromptDialog(
     onSubmit: (String) -> Boolean,
 ) {
     var pin by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocus() }
     val submit = {
         if (!onSubmit(pin)) {
-            error = true
+            val wait = Repo.pinCooldownSeconds()
+            error = if (wait > 0) "Muitas tentativas. Aguarde $wait s." else "PIN incorreto"
             pin = ""
         }
     }
@@ -53,15 +54,22 @@ fun PinPromptDialog(
         icon = { Icon(Icons.Rounded.Lock, null) },
         title = { Text(title) },
         text = {
+            // O foco é pedido dentro da janela do diálogo, depois que o campo já existe.
+            LaunchedEffect(Unit) {
+                try {
+                    focus.requestFocus()
+                } catch (_: IllegalStateException) {
+                }
+            }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(
                     value = pin,
-                    onValueChange = { pin = it.digitsOnly(); error = false },
+                    onValueChange = { pin = it.digitsOnly(); error = null },
                     label = { Text("PIN") },
                     singleLine = true,
-                    isError = error,
-                    supportingText = if (error) ({ Text("PIN incorreto") }) else null,
+                    isError = error != null,
+                    supportingText = error?.let { e -> { Text(e) } },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { submit() }),

@@ -1,0 +1,18 @@
+<!-- Ícone de notificação/bloco rápido: mesma arte, recortada na área visível. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="72" android:viewportHeight="72">
+    <group android:translateX="-18" android:translateY="-18">
+        <group android:scaleX="0.82" android:scaleY="0.82" android:pivotX="55" android:pivotY="48" android:translateY="-1">
+            <path android:fillColor="#FFFFFF" android:pathData="M56,24 C64,35 71,47 75,60 L56,60 Z" />
+            <path android:fillColor="#FFFFFF" android:pathData="M52,31 L52,60 L36,60 C40,50 45,40 52,31 Z" />
+            <path android:fillColor="#FFFFFF" android:pathData="M31,64 L79,64 C77,70 72,73 65,73 L45,73 C38,73 33,70 31,64 Z" />
+        </group>
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="3.6" android:fillColor="#00000000"
+            android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:pathData="M30,74 q6,-1.8 12,0 t12,0 t12,0 t12,0" />
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="3.6" android:fillColor="#00000000"
+            android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:pathData="M42,80.5 q6,-1.8 12,0 t12,0" />
+    </group>
+</vector>
