@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Safe Sailor</string>
+    <string name="tile_label">Safe Sailor</string>
+    <string name="channel_protection">Proteção</string>
+    <string name="channel_protection_desc">Mostra que a proteção está ativa</string>
+    <string name="notif_title">Proteção ativa</string>
+    <string name="notif_text">Sites bloqueados e conteúdo adulto estão sendo filtrados</string>
+</resources>
